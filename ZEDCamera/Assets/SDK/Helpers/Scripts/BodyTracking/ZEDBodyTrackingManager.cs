@@ -176,9 +176,16 @@ public class ZEDBodyTrackingManager : MonoBehaviour
         {
 
 #if ZED_URP
-            UniversalAdditionalCameraData urpCamData = zedManager.GetLeftCamera().GetComponent<UniversalAdditionalCameraData>();
-            urpCamData.renderPostProcessing = true;
-            urpCamData.renderShadows = false;
+            Camera leftCam = zedManager.GetLeftCamera();
+            if (leftCam != null)
+            {
+                UniversalAdditionalCameraData urpCamData = leftCam.GetComponent<UniversalAdditionalCameraData>();
+                if (urpCamData != null)
+                {
+                    urpCamData.renderPostProcessing = true;
+                    urpCamData.renderShadows = false;
+                }
+            }
 #endif
 
             zedManager.OnZEDReady += OnZEDReady;
