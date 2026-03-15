@@ -1931,6 +1931,14 @@ public class ZEDManager : MonoBehaviour
     {
         running = false;
 
+        // Close the camera first to unblock any native Grab() call that may be
+        // holding the grab thread. Without this, threadGrab.Join() can hang forever
+        // because Grab() is a blocking native call that won't check 'running'.
+        if (zedCamera != null)
+        {
+            zedCamera.Close();
+        }
+
         //In case the opening thread is still running.
         if (threadOpening != null)
         {
@@ -1938,14 +1946,18 @@ public class ZEDManager : MonoBehaviour
             forceCloseInit = true;
             initQuittingHandle.Set();
 
-            threadOpening.Join();
+            if (!threadOpening.Join(5000))
+            {
+            }
             threadOpening = null;
         }
 
         //Shut down the image grabbing thread.
         if (threadGrab != null)
         {
-            threadGrab.Join();
+            if (!threadGrab.Join(5000))
+            {
+            }
             threadGrab = null;
         }
 
@@ -1981,29 +1993,41 @@ public class ZEDManager : MonoBehaviour
 
     }
 
+    private bool isClosing = false;
     private void CloseManager()
     {
+        if (isClosing) return;
+        isClosing = true;
+
         if (spatialMapping != null)
             spatialMapping.Dispose();
 
+        // Stop the grab thread FIRST so that no native calls are in-flight
+        // when we disable body tracking / object detection. Otherwise
+        // DisableBodyTracking acquires grabLock while the grab thread may
+        // hold it during a lengthy processing cycle, causing a deadlock.
+        zedReady = false;
+        Destroy(); //Close the grab and initialization threads.
+
+        // Camera is already closed and threads are dead at this point.
+        // Native Disable calls are not needed (and would fail on a closed camera).
+        // Just reset the flags.
         if (IsObjectDetectionRunning)
         {
-            StopObjectDetection();
+            objectDetectionRunning = false;
         }
 
         if (IsBodyTrackingRunning)
         {
-            StopBodyTracking();
+            bodyTrackingRunning = false;
         }
 
 #if !ZED_HDRP && !ZED_URP
         ClearRendering();
 #endif
 
-        zedReady = false;
         OnCamBrightnessChange -= SetCameraBrightness;
         OnMaxDepthChange -= SetMaxDepthRange;
-        Destroy(); //Close the grab and initialization threads.
 
         if (zedCamera != null)
         {
@@ -2011,7 +2035,9 @@ public class ZEDManager : MonoBehaviour
             {
                 zedCamera.DisableRecording();
             }
-            zedCamera.Destroy();
+            // zedCamera.Close() was already called in Destroy() above,
+            // which did dllz_close + dllz_unload_instance.
+            // Do NOT call zedCamera.Destroy() again — double dllz_close can hang.
             zedCamera = null;
         }
 
