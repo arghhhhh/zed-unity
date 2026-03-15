@@ -2,18 +2,20 @@ using UnityEngine;
 using System.Text;
 using System.IO;
 using System.Collections.Generic;
+#if ZED_XR_MANAGEMENT
 using UnityEngine.XR.Management;
+#endif
 using UnityEngine.XR;
 
 /// <summary>
-/// Holds numerous static functions for getting info about the real world in 
-/// specific places, to compare to the virtual world in the same place. 
-/// <para>Examples include knowing where a real-world point you click on is in Unity world space, 
+/// Holds numerous static functions for getting info about the real world in
+/// specific places, to compare to the virtual world in the same place.
+/// <para>Examples include knowing where a real-world point you click on is in Unity world space,
 /// knowing what direction a real-world surface is facing, checking for collisions with the real world.</para>
 /// </summary><remarks>
 /// Functions that take a Vector2 for screen space (usually named "pixel" or something similar) are great for
 /// when you want to click on the screen to test the real-world 'thing' you click on. To do this, use Input.mousePosition
-/// and make a Vector2 out of the X and Y of the Vector3 it returns. 
+/// and make a Vector2 out of the X and Y of the Vector3 it returns.
 /// Most functions take a Camera as a parameter. Use the one providing the image on the screen -
 /// usually the left camera in the ZED rig, which can be easily retrieved using ZEDManager.GetLeftCameraTransform().
 /// </remarks>
@@ -21,6 +23,7 @@ public class ZEDSupportFunctions
 {
     public static bool hasXRDevice()
     {
+#if ZED_XR_MANAGEMENT
         bool isPresent = false;
         if (XRGeneralSettings.Instance)
         {
@@ -52,6 +55,9 @@ public class ZEDSupportFunctions
             }
         }
         return isPresent;
+#else
+        return false;
+#endif
     }
 
     /***********************************************************************************************
