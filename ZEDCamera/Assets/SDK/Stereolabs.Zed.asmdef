@@ -33,6 +33,11 @@
             "name": "Unity",
             "expression": "2022.3.3",
             "define": "NEW_TRANSFORM_API"
+        },
+        {
+            "name": "com.unity.xr.management",
+            "expression": "4.0.0",
+            "define": "ZED_XR_MANAGEMENT"
         }
     ],
     "noEngineReferences": false
